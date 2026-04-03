@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fairy Tail Guild Tracker</title>
+    
+    <!-- Google Fonts for Fantasy/Guild Theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Cinzel:wght@400;700;900&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- HTML to Canvas for PNG Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                        guild: ['"Berkshire Swash"', 'cursive'],
+                        title: ['Cinzel', 'serif'],
+                    },
+                    colors: {
+                        parchment: {
+                            light: '#fffdf5',
+                            DEFAULT: '#fdf6e3',
+                            dark: '#f0e6d2'
+                        },
+                        wood: {
+                            DEFAULT: '#6b4c3a',
+                            dark: '#4a3326'
+                        },
+                        guild: {
+                            red: '#b91c1c',     // Natsu Fire
+                            gold: '#f59e0b',    // Stellar Spirit Gold
+                            blue: '#0284c7'     // Ice-Make Blue
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom texture overlays */
+        body {
+            background-color: #fdf6e3;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+        .quest-border {
+            border: 8px solid #4a3326;
+            box-shadow: inset 0 0 20px rgba(74, 51, 38, 0.4), 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .fade-out {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="text-wood-dark font-sans pb-12 selection:bg-guild-red selection:text-guild-gold overflow-x-hidden" id="body">
+
+    <!-- PASSWORD GATEWAY SCREEN -->
+    <div id="auth-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#1a1a1a] bg-opacity-95 backdrop-blur-sm p-4">
+        <div class="bg-parchment p-8 sm:p-12 rounded shadow-2xl max-w-md w-full text-center relative quest-border">
+            <div class="w-16 h-16 bg-guild-red rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-guild-gold shadow-[0_0_20px_rgba(245,158,11,0.5)]">
+                <i data-lucide="flame" class="w-8 h-8 text-guild-gold"></i>
+            </div>
+            
+            <h2 class="text-5xl font-guild text-wood-dark tracking-wide mb-2">Halt, Wizard!</h2>
+            <div class="w-full h-1 bg-wood-dark mb-4 opacity-50"></div>
+            
+            <p class="text-wood-dark font-black uppercase tracking-wider text-sm mb-8 opacity-80">
+                Magic Council Checkpoint.<br>Enter the guild passcode to access the quest board.
+            </p>
+            
+            <form id="auth-form" class="space-y-5">
+                <div>
+                    <input 
+                        type="password" 
+                        id="password-input" 
+                        placeholder="Password..." 
+                        class="w-full px-4 py-3 bg-parchment-light border-2 border-wood-dark rounded text-center text-xl font-bold text-wood-dark focus:outline-none focus:border-guild-red focus:ring-2 focus:ring-guild-red/30 shadow-inner"
+                    >
+                    <p id="auth-error" class="text-guild-red font-black text-sm mt-2 hidden uppercase tracking-widest animate-pulse">
+                        <i data-lucide="shield-alert" class="w-4 h-4 inline pb-0.5"></i> Incorrect Passcode!
+                    </p>
+                </div>
+                
+                <button type="submit" class="w-full bg-guild-red hover:bg-red-800 text-guild-gold px-6 py-3 rounded font-black text-lg uppercase tracking-widest transition-all border-2 border-wood-dark shadow-[4px_4px_0px_#4a3326] active:translate-y-1 active:shadow-[0px_0px_0px_#4a3326]">
+                    Enter Guild
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTENT -->
+    <div id="main-app" class="opacity-0 transition-opacity duration-500 overflow-hidden">
+        
+        <!-- Header -->
+        <header class="bg-[#1e1b18] shadow-xl border-b-4 border-guild-red sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+                <div class="py-4 flex flex-col lg:flex-row justify-between items-center gap-4 relative z-10">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-guild-red flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.4)] border-2 border-guild-gold shrink-0">
+                            <i data-lucide="flame" class="w-7 h-7 text-guild-gold"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl sm:text-3xl font-guild text-guild-gold tracking-wider drop-shadow-md">Guild Quest Tracker</h1>
+                            <p class="text-[10px] sm:text-xs text-gray-300 font-bold uppercase tracking-widest flex items-center gap-2">
+                                Earth Land Navigation <span id="cloud-status" class="hidden text-emerald-400 flex items-center gap-1"><i data-lucide="cloud" class="w-3 h-3"></i> Lacrima Synced</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions in Header -->
+                    <div class="flex items-center gap-2 sm:gap-4 flex-wrap justify-center">
+                        <button id="export-data-btn" class="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-parchment hover:bg-[#f0e6d2] text-wood-dark text-xs sm:text-sm font-black uppercase tracking-wider rounded border-2 border-wood-dark shadow-[2px_2px_0px_#4a3326] sm:shadow-[4px_4px_0px_#4a3326] transition-all active:translate-y-1 active:shadow-none">
+                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                            <span>Export Journal</span>
+                        </button>
+                        <button id="export-btn" class="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-guild-gold hover:bg-yellow-500 text-wood-dark text-xs sm:text-sm font-black uppercase tracking-wider rounded border-2 border-wood-dark shadow-[2px_2px_0px_#4a3326] sm:shadow-[4px_4px_0px_#4a3326] transition-all active:translate-y-1 active:shadow-none">
+                            <i data-lucide="camera" class="w-4 h-4"></i>
+                            <span>Capture Board</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
+            
+            <!-- Controls Panel -->
+            <div class="bg-parchment-light p-4 sm:p-6 rounded shadow-lg border-2 border-wood border-opacity-30 flex flex-col md:flex-row gap-6 relative overflow-hidden justify-between items-start md:items-center">
+                
+                <!-- Filters -->
+                <div class="space-y-3 w-full md:w-auto flex-1">
+                    <h2 class="text-sm font-guild text-guild-red text-xl tracking-wide flex items-center gap-2">
+                        <i data-lucide="map" class="w-4 h-4"></i> Quest Categories
+                    </h2>
+                    <div class="flex flex-wrap gap-2" id="filter-buttons">
+                        <button data-filter="all" class="filter-btn px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider transition-all bg-wood-dark text-parchment-light border-2 border-wood-dark shadow-[2px_2px_0px_#b91c1c]">All</button>
+                        <button data-filter="manga" class="filter-btn px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider transition-all border-2 border-amber-600 bg-amber-100 text-amber-900 shadow-[2px_2px_0px_#d97706] hover:bg-amber-200">Manga</button>
+                        <button data-filter="mixed" class="filter-btn px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider transition-all border-2 border-sky-600 bg-sky-100 text-sky-900 shadow-[2px_2px_0px_#0284c7] hover:bg-sky-200">Mixed</button>
+                        <button data-filter="anime" class="filter-btn px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider transition-all border-2 border-emerald-600 bg-emerald-100 text-emerald-900 shadow-[2px_2px_0px_#059669] hover:bg-emerald-200">Anime</button>
+                        <button data-filter="filler" class="filter-btn px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider transition-all border-2 border-red-600 bg-red-100 text-red-900 shadow-[2px_2px_0px_#dc2626] hover:bg-red-200">Filler</button>
+                    </div>
+
+                    <label class="flex items-center gap-2 mt-2 cursor-pointer select-none w-max group">
+                        <div id="hide-filler-toggle" class="w-10 h-5 flex items-center rounded-full p-1 transition-all bg-wood-dark border-2 border-wood-dark shadow-inner">
+                            <div id="hide-filler-knob" class="bg-parchment-light w-3 h-3 rounded-full shadow-md transform transition-transform"></div>
+                        </div>
+                        <span class="text-xs font-black uppercase tracking-widest text-wood-dark mt-0.5">Skip Filler</span>
+                    </label>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 shrink-0 w-full md:w-auto">
+                    <!-- Bulk Actions (Minimized) -->
+                    <div class="space-y-2 bg-parchment p-3 rounded border-2 border-wood/20 shadow-inner w-full sm:w-auto">
+                        <h2 class="text-sm font-guild text-guild-red text-lg tracking-wide flex items-center gap-1.5">
+                            <i data-lucide="swords" class="w-4 h-4"></i> Quick Mark
+                        </h2>
+                        <form id="bulk-form" class="flex gap-2 items-center">
+                            <input 
+                                type="number" 
+                                id="bulk-input"
+                                placeholder="Up to ep..." 
+                                class="w-full sm:w-28 px-3 py-1.5 bg-parchment-light border-2 border-wood rounded shadow-inner focus:ring-0 focus:border-guild-red text-xs text-wood-dark font-bold placeholder-wood-dark/50 outline-none"
+                            />
+                            <button type="submit" class="bg-guild-red hover:bg-red-800 text-guild-gold px-4 py-1.5 rounded font-black text-xs uppercase tracking-wider transition-all border-2 border-guild-red shadow-[2px_2px_0px_#4a3326] active:translate-y-0.5 active:shadow-none shrink-0">
+                                Complete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXPORT CONTAINER (The Quest Board - Capture Map) -->
+            <div id="export-container" class="bg-parchment p-4 sm:p-8 relative quest-border">
+                
+                <!-- Board Header -->
+                <div class="mb-10 text-center relative">
+                    <h2 class="text-5xl sm:text-7xl font-title text-wood-dark tracking-widest mb-1 font-black opacity-90" style="transform: scaleY(1.1);">FAIRY TAIL</h2>
+                    <div class="w-full h-1 bg-wood-dark mb-1"></div>
+                    <div class="w-full h-0.5 bg-wood-dark mb-6"></div>
+                    
+                    <p class="text-wood-dark text-sm sm:text-base font-black uppercase tracking-[0.3em] mb-4">Official Guild Requests - Episode Hunter</p>
+                    
+                    <div class="text-4xl sm:text-5xl font-guild text-guild-red tracking-widest drop-shadow-sm mb-6 flex justify-center items-center gap-2">
+                        <i data-lucide="star" class="w-8 h-8 text-wood-dark"></i>
+                        <span id="watched-count">0</span> / <span id="total-count">328</span> EPS
+                        <i data-lucide="star" class="w-8 h-8 text-wood-dark"></i>
+                    </div>
+                    
+                    <!-- Magic Progress Bar -->
+                    <div class="max-w-3xl mx-auto">
+                        <div class="w-full bg-wood-dark rounded-sm h-6 overflow-hidden border-2 border-wood-dark flex relative items-center shadow-inner">
+                            <div id="progress-bar-fill" class="h-full transition-all duration-500 ease-out bg-guild-red" style="width: 0%"></div>
+                            <span id="progress-text" class="absolute w-full text-center text-xs font-black text-white drop-shadow-md tracking-widest">0% QUESTS COMPLETE</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-[10px] sm:text-xs font-black uppercase tracking-wider text-wood-dark mt-8" id="legend-container">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Sagas & Arcs Container -->
+                <div id="sagas-container" class="space-y-8">
+                    <!-- Populated by JS -->
+                </div>
+                
+                <!-- Guild Stamp / Footer -->
+                <div class="mt-12 flex justify-between items-end border-t-2 border-wood-dark/30 pt-4">
+                    <div class="text-left text-wood-dark/70 text-xs font-bold uppercase tracking-widest">
+                        Issued by The Magic Council<br>
+                        Date: <span id="current-date"></span>
+                    </div>
+                    <div class="w-20 h-20 rounded-full border-4 border-guild-red flex items-center justify-center text-guild-red font-title font-black text-sm rotate-12 opacity-80 text-center leading-tight">
+                        MAGIC<br>APPROVED
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- HIDDEN DATA SUMMARY TEMPLATE FOR EXPORT -->
+    <div id="data-summary-container" class="fixed top-0 left-[200vw] w-[1000px] bg-[#fdf6e3] p-12 border-[8px] border-[#4a3326] shadow-[inset_0_0_30px_rgba(74,51,38,0.3)] z-[-1] text-[#4a3326]">
+        <div class="text-center mb-10 relative">
+            <i data-lucide="sparkles" class="absolute top-0 left-0 w-16 h-16 text-[#4a3326] opacity-30"></i>
+            <i data-lucide="flame" class="absolute top-0 right-0 w-16 h-16 text-[#4a3326] opacity-30"></i>
+            
+            <h2 class="text-6xl font-guild text-[#4a3326] tracking-wide mb-2 border-b-4 border-[#4a3326] pb-4 inline-block px-12">WIZARD'S JOURNAL</h2>
+            <p class="text-base font-black uppercase tracking-[0.4em] opacity-80 mt-4">Completion Data by Arc</p>
+            
+            <div class="mt-6 text-4xl font-title font-black text-[#b91c1c] bg-[#fffdf5] inline-block px-8 py-3 rounded border-2 border-[#4a3326] shadow-[4px_4px_0px_#4a3326]">
+                TOTAL: <span id="summary-watched">0</span> / <span id="summary-total">328</span> EPS (<span id="summary-percent">0</span>%)
+            </div>
+        </div>
+        
+        <div id="data-summary-sagas" class="grid grid-cols-2 gap-x-10 gap-y-8">
+            <!-- Populated by JS on Export -->
+        </div>
+
+        <div class="mt-12 text-center text-sm font-bold uppercase tracking-[0.2em] text-[#4a3326]/70 border-t-4 border-[#4a3326]/30 pt-6 flex justify-between items-center">
+            <span>Generated by Guild Quest Tracker</span>
+            <span id="summary-date"></span>
+        </div>
+    </div>
+
+    <!-- ES Module Script containing Logic + User Firebase Config -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- USER FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2sRYa3V3VyDojNJMlCEMdAjNgnUR6twI",
+            authDomain: "grand-f53d0.firebaseapp.com",
+            projectId: "grand-f53d0",
+            storageBucket: "grand-f53d0.firebasestorage.app",
+            messagingSenderId: "121624877125",
+            appId: "1:121624877125:web:0467a62f2f4aa89005ab2c",
+            measurementId: "G-6WK2FR4B9E"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // This targets a specific document for FAIRY TAIL so it doesn't conflict with your One Piece data
+        const syncDocRef = doc(db, 'trackers', 'my_personal_fairytail_log');
+
+        // --- GLOBAL STATE ---
+        window.trackerState = {
+            watched: JSON.parse(localStorage.getItem('ftTracker_guild_quests')) || {},
+            filterType: 'all',
+            hideFiller: false
+        };
+
+        // Initialize Real-time Listener from Firebase
+        onSnapshot(syncDocRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const cloudData = snapshot.data().watched || {};
+                // Only sync if the cloud has data to avoid overwriting with empties initially
+                if (Object.keys(cloudData).length > 0) {
+                    window.trackerState.watched = cloudData;
+                    localStorage.setItem('ftTracker_guild_quests', JSON.stringify(cloudData));
+                }
+                document.getElementById('cloud-status').classList.remove('hidden');
+                
+                // Only render if we are past the password screen
+                if (sessionStorage.getItem('ftTracker_unlocked') === 'true') {
+                    window.renderUI();
+                }
+            }
+        }, (error) => {
+            console.error("Firebase Sync Error (Check your Firestore Rules!):", error);
+        });
+
+        // The save function now pushes to Firebase AND Local Storage
+        window.saveState = function() {
+            // Save locally
+            localStorage.setItem('ftTracker_guild_quests', JSON.stringify(window.trackerState.watched));
+            
+            // Push to Firebase Cloud
+            setDoc(syncDocRef, { watched: window.trackerState.watched }, { merge: true })
+                .catch(err => console.error("Error saving to cloud:", err));
+                
+            window.renderUI();
+        };
+
+
+        // --- AUTHENTICATION LOGIC (Password Screen) ---
+        const authScreen = document.getElementById('auth-screen');
+        const authForm = document.getElementById('auth-form');
+        const passwordInput = document.getElementById('password-input');
+        const authError = document.getElementById('auth-error');
+        const mainApp = document.getElementById('main-app');
+        const body = document.getElementById('body');
+
+        if (sessionStorage.getItem('ftTracker_unlocked') === 'true') {
+            unlockApp(false); 
+        }
+
+        authForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pass = passwordInput.value.trim().toLowerCase();
+            
+            // NEW PASSWORD FOR FAIRY TAIL
+            if (pass === 'fairytail') {
+                sessionStorage.setItem('ftTracker_unlocked', 'true');
+                unlockApp(true);
+            } else {
+                authError.classList.remove('hidden');
+                passwordInput.value = '';
+                passwordInput.focus();
+                setTimeout(() => { authError.classList.add('hidden'); }, 3000);
+            }
+        });
+
+        function unlockApp(animate) {
+            body.classList.remove('overflow-hidden');
+            if (animate) {
+                authScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    authScreen.remove();
+                    mainApp.classList.remove('opacity-0');
+                    window.renderUI(); // Render upon unlock
+                }, 500);
+            } else {
+                authScreen.remove();
+                mainApp.classList.remove('opacity-0');
+            }
+        }
+
+
+        // --- DATA & SAGAS LOGIC ---
+        // Using your exact episode data!
+        const mangaRanges = "1-8, 10-18, 21-48, 51-68, 76-124, 152-181, 184-200, 227-245, 247-254, 257-259, 261-267, 269, 271-311, 313-328";
+        const mixedRanges = "20, 49, 69, 151, 182-183, 201, 255, 260, 270, 312";
+        const fillerRanges = "9, 19, 50, 70-75, 125-150, 202-226, 268";
+        const animeRanges = "246, 256";
+        const TOTAL_EPS = 328;
+
+        function parseRanges(rangeStr, type) {
+            const episodes = [];
+            rangeStr.split(',').forEach(part => {
+                const trimmed = part.trim();
+                if (trimmed.includes('-')) {
+                    const [start, end] = trimmed.split('-').map(Number);
+                    for (let i = start; i <= end; i++) episodes.push({ number: i, type });
+                } else {
+                    episodes.push({ number: Number(trimmed), type });
+                }
+            });
+            return episodes;
+        }
+
+        const allEpisodesArray = [
+            ...parseRanges(mangaRanges, 'manga'),
+            ...parseRanges(mixedRanges, 'mixed'),
+            ...parseRanges(fillerRanges, 'filler'),
+            ...parseRanges(animeRanges, 'anime')
+        ];
+        
+        const allEpisodesMap = {};
+        allEpisodesArray.forEach(ep => allEpisodesMap[ep.number] = ep);
+
+        // Grouping the episodes into their standard Fairy Tail Arcs
+        const sagasData = [
+            {
+                saga: "Early Adventures",
+                arcs: [
+                    { title: "Macao & Daybreak Arc", episodes: "1-4" },
+                    { title: "Lullaby Arc", episodes: "5-9" },
+                    { title: "Galuna Island Arc", episodes: "10-20" }
+                ]
+            },
+            {
+                saga: "Guild Wars",
+                arcs: [
+                    { title: "Phantom Lord Arc", episodes: "21-29" },
+                    { title: "Loke Arc", episodes: "30-32" },
+                    { title: "Tower of Heaven Arc", episodes: "33-41" },
+                    { title: "Battle of Fairy Tail Arc", episodes: "42-48" }
+                ]
+            },
+            {
+                saga: "Alliances & Betrayals",
+                arcs: [
+                    { title: "Oración Seis Arc", episodes: "49-68" },
+                    { title: "Daphne Arc", episodes: "69-75" }
+                ]
+            },
+            {
+                saga: "Beyond Earth Land",
+                arcs: [
+                    { title: "Edolas Arc", "episodes": "76-95" },
+                    { title: "Tenrou Island Arc", "episodes": "96-122" },
+                    { title: "X791 Arc", "episodes": "123-124" }
+                ]
+            },
+            {
+                saga: "The Grand Magic Games",
+                arcs: [
+                    { title: "Key of the Starry Sky Arc", episodes: "125-150" },
+                    { title: "Grand Magic Games Arc", episodes: "151-203" }
+                ]
+            },
+            {
+                saga: "Spirits & Demons",
+                arcs: [
+                    { title: "Eclipse Celestial Spirits Arc", episodes: "204-226" },
+                    { title: "Sun Village Arc", episodes: "227-233" },
+                    { title: "Tartaros Arc", episodes: "234-265" }
+                ]
+            },
+            {
+                saga: "Origins & The End",
+                arcs: [
+                    { title: "Fairy Tail Zero", episodes: "266-275" },
+                    { title: "Avatar Arc", episodes: "276-284" },
+                    { title: "Alvarez Empire Arc", episodes: "285-328" }
+                ]
+            }
+        ];
+
+        function parseArcRangeToNumbers(rangeStr) {
+            const numbers = [];
+            rangeStr.split(',').forEach(part => {
+                const trimmed = part.trim();
+                if (trimmed.includes('-')) {
+                    const [start, end] = trimmed.split('-').map(Number);
+                    for (let i = start; i <= end; i++) numbers.push(i);
+                } else {
+                    numbers.push(Number(trimmed));
+                }
+            });
+            return numbers;
+        }
+
+        const typeConfig = {
+            manga: { label: 'Manga Canon', bg: 'bg-[#fcd34d]', text: 'text-[#78350f]', border: 'border-[#b45309]', activeClass: 'ring-2 ring-[#b45309] bg-[#fcd34d] text-[#78350f] border-[#b45309]', shadow: 'shadow-[2px_2px_0px_#b45309]' },
+            mixed: { label: 'Mixed Canon', bg: 'bg-[#7dd3fc]', text: 'text-[#0c4a6e]', border: 'border-[#0284c7]', activeClass: 'ring-2 ring-[#0284c7] bg-[#7dd3fc] text-[#0c4a6e] border-[#0284c7]', shadow: 'shadow-[2px_2px_0px_#0284c7]' },
+            anime: { label: 'Anime Canon', bg: 'bg-[#86efac]', text: 'text-[#14532d]', border: 'border-[#16a34a]', activeClass: 'ring-2 ring-[#16a34a] bg-[#86efac] text-[#14532d] border-[#16a34a]', shadow: 'shadow-[2px_2px_0px_#16a34a]' },
+            filler: { label: 'Filler', bg: 'bg-[#fca5a5]', text: 'text-[#7f1d1d]', border: 'border-[#dc2626]', activeClass: 'ring-2 ring-[#dc2626] bg-[#fca5a5] text-[#7f1d1d] border-[#dc2626]', shadow: 'shadow-[2px_2px_0px_#dc2626]' },
+        };
+
+
+        // --- UI Rendering ---
+        window.initializeUI = function() {
+            lucide.createIcons();
+            const today = new Date();
+            const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            document.getElementById('current-date').textContent = dateString;
+            document.getElementById('summary-date').textContent = dateString;
+
+            // Setup Legend
+            const legendHtml = Object.entries(typeConfig).map(([key, config]) => `
+                <span class="flex items-center gap-1.5 bg-parchment-light px-2.5 py-1 rounded border-2 ${config.border} ${config.text} shadow-[2px_2px_0px_currentColor]">
+                    <i data-lucide="circle-dot" class="w-3 h-3"></i> ${config.label}
+                </span>
+            `).join('') + `
+                <span class="flex items-center gap-1.5 bg-wood-dark text-guild-gold px-2.5 py-1 rounded border-2 border-wood-dark shadow-[2px_2px_0px_#b91c1c]">
+                    <i data-lucide="check" class="w-3 h-3"></i> Completed
+                </span>
+            `;
+            document.getElementById('legend-container').innerHTML = legendHtml;
+            lucide.createIcons();
+            window.renderUI();
+        }
+
+        window.renderUI = function() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                const fType = btn.getAttribute('data-filter');
+                if (fType === window.trackerState.filterType) {
+                    if (fType === 'all') {
+                        btn.className = "filter-btn px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider transition-all bg-wood-dark text-parchment-light border-2 border-wood-dark shadow-[2px_2px_0px_#b91c1c] ring-2 ring-guild-red ring-offset-1 ring-offset-parchment-light";
+                    } else {
+                        btn.className = `filter-btn px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider transition-all border-2 ${typeConfig[fType].activeClass} shadow-[2px_2px_0px_currentColor] ring-offset-1 ring-offset-parchment-light`;
+                    }
+                } else {
+                    if (fType === 'all') {
+                        btn.className = "filter-btn px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider transition-all bg-wood-dark/80 text-parchment border-2 border-wood opacity-70 hover:opacity-100";
+                    } else {
+                        const config = typeConfig[fType];
+                        btn.className = `filter-btn px-3 py-1.5 rounded text-xs font-black uppercase tracking-wider transition-all border-2 ${config.border} bg-parchment-light text-wood-dark opacity-70 hover:opacity-100 hover:${config.bg}`;
+                    }
+                }
+            });
+
+            const toggleBg = document.getElementById('hide-filler-toggle');
+            const toggleKnob = document.getElementById('hide-filler-knob');
+            if (window.trackerState.hideFiller) {
+                toggleBg.classList.replace('bg-wood-dark', 'bg-guild-red');
+                toggleKnob.classList.add('translate-x-5');
+            } else {
+                toggleBg.classList.replace('bg-guild-red', 'bg-wood-dark');
+                toggleKnob.classList.remove('translate-x-5');
+            }
+
+            let htmlOutput = '';
+            let totalVisibleEpisodes = 0;
+
+            sagasData.forEach(saga => {
+                let sagaContentHtml = '';
+
+                saga.arcs.forEach(arc => {
+                    const arcEpNums = parseArcRangeToNumbers(arc.episodes);
+                    const visibleArcEps = arcEpNums.map(num => allEpisodesMap[num]).filter(ep => {
+                        if (!ep) return false;
+                        if (window.trackerState.hideFiller && ep.type === 'filler') return false;
+                        if (window.trackerState.filterType !== 'all' && ep.type !== window.trackerState.filterType) return false;
+                        return true;
+                    });
+
+                    if (visibleArcEps.length > 0) {
+                        totalVisibleEpisodes += visibleArcEps.length;
+
+                        const buttonsHtml = visibleArcEps.map(ep => {
+                            const config = typeConfig[ep.type];
+                            const isWatched = window.trackerState.watched[ep.number];
+                            
+                            const baseClasses = "episode-btn relative aspect-square rounded border-2 flex flex-col items-center justify-center font-black text-xs sm:text-sm transition-all duration-100 select-none overflow-hidden cursor-pointer";
+                            const stateClasses = isWatched 
+                                ? "bg-wood-dark border-wood-dark text-guild-gold scale-95 shadow-inner opacity-90" 
+                                : `${config.bg} ${config.text} ${config.border} ${config.shadow} hover:-translate-y-1 hover:brightness-110`;
+
+                            return `
+                                <button data-num="${ep.number}" class="${baseClasses} ${stateClasses}" title="Episode ${ep.number} - ${config.label}">
+                                    <span class="z-10 pointer-events-none drop-shadow-sm">${ep.number}</span>
+                                    ${isWatched ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><i data-lucide="check" class="w-8 h-8 text-guild-red opacity-80 drop-shadow-md stroke-[3]"></i></div>` : ''}
+                                </button>
+                            `;
+                        }).join('');
+
+                        sagaContentHtml += `
+                            <div class="mb-5">
+                                <h4 class="text-lg font-guild text-wood-dark border-b-2 border-wood/20 pb-1 mb-2 flex justify-between items-end tracking-wide">
+                                    <span>${arc.title}</span>
+                                    <span class="text-[10px] font-sans font-bold text-wood/60 tracking-widest uppercase">Eps ${arc.episodes}</span>
+                                </h4>
+                                <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-14 gap-2">
+                                    ${buttonsHtml}
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+
+                if (sagaContentHtml !== '') {
+                    htmlOutput += `
+                        <div class="saga-section bg-parchment-light/60 p-4 sm:p-6 rounded border-2 border-wood/30 shadow-inner">
+                            <h3 class="text-2xl sm:text-3xl font-guild text-guild-red text-center mb-6 drop-shadow-sm tracking-widest uppercase">
+                                ~ ${saga.saga} ~
+                            </h3>
+                            ${sagaContentHtml}
+                        </div>
+                    `;
+                }
+            });
+
+            if (totalVisibleEpisodes === 0) {
+                htmlOutput = `
+                    <div class="col-span-full text-center py-20 bg-parchment border-4 border-dashed border-wood/30 rounded">
+                        <i data-lucide="map" class="w-16 h-16 text-wood/40 mx-auto mb-4"></i>
+                        <p class="text-wood-dark font-black uppercase tracking-widest text-lg">No quests match your filters.</p>
+                    </div>`;
+            }
+
+            document.getElementById('sagas-container').innerHTML = htmlOutput;
+            
+            const watchedCount = Object.values(window.trackerState.watched).filter(Boolean).length;
+            const progressPercentage = Math.round((watchedCount / TOTAL_EPS) * 100) || 0;
+            
+            document.getElementById('watched-count').textContent = watchedCount;
+            document.getElementById('summary-watched').textContent = watchedCount;
+            document.getElementById('progress-bar-fill').style.width = `${progressPercentage}%`;
+            document.getElementById('progress-text').textContent = `${progressPercentage}% QUESTS COMPLETE`;
+            document.getElementById('summary-percent').textContent = progressPercentage;
+            
+            lucide.createIcons();
+        }
+
+        // --- Event Listeners Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            window.initializeUI();
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    window.trackerState.filterType = e.target.getAttribute('data-filter');
+                    window.renderUI();
+                });
+            });
+
+            document.getElementById('hide-filler-toggle').parentElement.addEventListener('click', () => {
+                window.trackerState.hideFiller = !window.trackerState.hideFiller;
+                window.renderUI();
+            });
+
+            document.getElementById('bulk-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const upTo = parseInt(document.getElementById('bulk-input').value);
+                if (!isNaN(upTo) && upTo > 0) {
+                    const newWatched = { ...window.trackerState.watched };
+                    for (let i = 1; i <= upTo; i++) {
+                        if (allEpisodesMap[i]) {
+                            newWatched[i] = true;
+                        }
+                    }
+                    window.trackerState.watched = newWatched;
+                    document.getElementById('bulk-input').value = '';
+                    window.saveState();
+                }
+            });
+
+            document.getElementById('sagas-container').addEventListener('click', (e) => {
+                const btn = e.target.closest('.episode-btn');
+                if (btn) {
+                    const num = parseInt(btn.getAttribute('data-num'));
+                    window.trackerState.watched[num] = !window.trackerState.watched[num];
+                    window.saveState();
+                }
+            });
+
+            // Export PNG (Quest Board - Capture Map)
+            document.getElementById('export-btn').addEventListener('click', async () => {
+                const btn = document.getElementById('export-btn');
+                const originalHtml = btn.innerHTML;
+                try {
+                    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span class="hidden sm:inline">Printing...</span>`;
+                    lucide.createIcons();
+                    btn.disabled = true;
+                    btn.classList.add('opacity-75');
+
+                    const element = document.getElementById('export-container');
+                    const canvas = await html2canvas(element, { backgroundColor: '#fdf6e3', scale: 2, useCORS: true, logging: false });
+                    
+                    const watchedCount = Object.values(window.trackerState.watched).filter(Boolean).length;
+                    const link = document.createElement('a');
+                    link.download = `FairyTail-QuestBoard-${watchedCount}-Complete.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } catch (err) {
+                    console.error(err);
+                    alert("Failed to print poster.");
+                } finally {
+                    btn.innerHTML = originalHtml;
+                    lucide.createIcons();
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-75');
+                }
+            });
+
+            // Export PNG (Logbook - Data Summary)
+            document.getElementById('export-data-btn').addEventListener('click', async () => {
+                const btn = document.getElementById('export-data-btn');
+                const originalHtml = btn.innerHTML;
+                try {
+                    btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span class="hidden sm:inline">Writing...</span>`;
+                    lucide.createIcons();
+                    btn.disabled = true;
+                    btn.classList.add('opacity-75');
+
+                    let summaryHtml = '';
+                    sagasData.forEach(saga => {
+                        let sagaTotal = 0;
+                        let sagaWatched = 0;
+                        let arcsHtml = '';
+
+                        saga.arcs.forEach(arc => {
+                            const arcEpNums = parseArcRangeToNumbers(arc.episodes);
+                            const validArcEps = arcEpNums.filter(num => allEpisodesMap[num]);
+                            const arcTotalCount = validArcEps.length;
+                            const arcWatchedCount = validArcEps.filter(num => window.trackerState.watched[num]).length;
+
+                            if (arcTotalCount > 0) {
+                                sagaTotal += arcTotalCount;
+                                sagaWatched += arcWatchedCount;
+
+                                const arcPercent = Math.round((arcWatchedCount / arcTotalCount) * 100) || 0;
+                                const arcColor = arcPercent === 100 ? 'text-[#14532d]' : 'text-[#4a3326]';
+                                
+                                arcsHtml += `
+                                    <div class="flex justify-between items-center text-sm font-bold border-b border-[#4a3326]/20 py-1.5 ${arcColor}">
+                                        <span>${arc.title}</span>
+                                        <span class="bg-[#fdf6e3] px-2 py-0.5 rounded shadow-inner border border-[#4a3326]/20">${arcWatchedCount} / ${arcTotalCount}</span>
+                                    </div>
+                                `;
+                            }
+                        });
+
+                        const sagaPercent = Math.round((sagaWatched / sagaTotal) * 100) || 0;
+                        const sagaColor = sagaPercent === 100 ? 'text-[#b91c1c]' : 'text-[#4a3326]';
+
+                        if (sagaTotal > 0) {
+                            summaryHtml += `
+                                <div class="bg-[#fffdf5] p-5 border-2 border-[#4a3326] rounded shadow-[2px_2px_0px_#4a3326]">
+                                    <h3 class="text-3xl font-guild ${sagaColor} tracking-wide mb-3 border-b-2 border-[#b91c1c]/30 flex justify-between items-end pb-1">
+                                        <span>${saga.saga}</span>
+                                        <span class="text-xl font-sans font-black">${sagaPercent}%</span>
+                                    </h3>
+                                    <div class="space-y-1">
+                                        ${arcsHtml}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+
+                    document.getElementById('data-summary-sagas').innerHTML = summaryHtml;
+                    await new Promise(r => setTimeout(r, 100));
+
+                    const element = document.getElementById('data-summary-container');
+                    const canvas = await html2canvas(element, { 
+                        backgroundColor: '#fdf6e3', 
+                        scale: 2, 
+                        useCORS: true, 
+                        logging: false 
+                    });
+                    
+                    const link = document.createElement('a');
+                    link.download = `FairyTail-Wizard-Journal.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } catch (err) {
+                    console.error(err);
+                    alert("Failed to export journal.");
+                } finally {
+                    btn.innerHTML = originalHtml;
+                    lucide.createIcons();
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-75');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
