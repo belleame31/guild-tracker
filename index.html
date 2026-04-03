@@ -192,20 +192,33 @@
                     <div class="w-full h-1 bg-wood-dark mb-1"></div>
                     <div class="w-full h-0.5 bg-wood-dark mb-6"></div>
                     
-                    <p class="text-wood-dark text-sm sm:text-base font-black uppercase tracking-[0.3em] mb-4">Official Guild Requests - Episode Hunter</p>
+                    <p class="text-wood-dark text-sm sm:text-base font-black uppercase tracking-[0.3em] mb-8">Official Guild Requests - Episode Hunter</p>
                     
-                    <div class="text-4xl sm:text-5xl font-guild text-guild-red tracking-widest drop-shadow-sm mb-6 flex justify-center items-center gap-2">
-                        <i data-lucide="star" class="w-8 h-8 text-wood-dark"></i>
-                        <span id="watched-count">0</span> / <span id="total-count">328</span> EPS
-                        <i data-lucide="star" class="w-8 h-8 text-wood-dark"></i>
-                    </div>
-                    
-                    <!-- Magic Progress Bar -->
-                    <div class="max-w-3xl mx-auto">
-                        <div class="w-full bg-wood-dark rounded-sm h-6 overflow-hidden border-2 border-wood-dark flex relative items-center shadow-inner">
-                            <div id="progress-bar-fill" class="h-full transition-all duration-500 ease-out bg-guild-red" style="width: 0%"></div>
-                            <span id="progress-text" class="absolute w-full text-center text-xs font-black text-white drop-shadow-md tracking-widest">0% QUESTS COMPLETE</span>
+                    <!-- Magic Progress Bars (Dual Configuration) -->
+                    <div class="max-w-3xl mx-auto space-y-4">
+                        
+                        <!-- Top Bar: Main Story Completion -->
+                        <div>
+                            <div class="flex justify-between text-wood-dark font-black uppercase tracking-wider text-xs sm:text-sm mb-1.5">
+                                <span class="flex items-center gap-1.5"><i data-lucide="star" class="w-4 h-4 text-guild-red"></i> Main Story <span class="text-[10px] opacity-70 ml-1 hidden sm:inline">(Canon Only)</span></span>
+                                <span id="main-progress-text">0 / 0 EPS (0%)</span>
+                            </div>
+                            <div class="w-full bg-wood-dark rounded-sm h-6 overflow-hidden border-2 border-wood-dark flex relative items-center shadow-inner">
+                                <div id="main-progress-fill" class="h-full transition-all duration-500 ease-out bg-guild-red" style="width: 0%"></div>
+                            </div>
                         </div>
+
+                        <!-- Bottom Bar: Total Completion (Incl. Fillers) -->
+                        <div>
+                            <div class="flex justify-between text-wood-dark font-bold uppercase tracking-wider text-[10px] sm:text-xs mb-1 opacity-80">
+                                <span>Total Completion <span class="text-[9px] opacity-70 ml-1 hidden sm:inline">(Incl. Fillers)</span></span>
+                                <span id="total-progress-text">0 / 328 EPS (0%)</span>
+                            </div>
+                            <div class="w-full bg-wood-dark/80 rounded-sm h-3 overflow-hidden border border-wood-dark flex relative items-center shadow-inner">
+                                <div id="total-progress-fill" class="h-full transition-all duration-500 ease-out bg-[#0284c7]" style="width: 0%"></div>
+                            </div>
+                        </div>
+
                     </div>
                     
                     <!-- Legend -->
@@ -240,14 +253,32 @@
             <i data-lucide="flame" class="absolute top-0 right-0 w-16 h-16 text-[#4a3326] opacity-30"></i>
             
             <h2 class="text-6xl font-guild text-[#4a3326] tracking-wide mb-2 border-b-4 border-[#4a3326] pb-4 inline-block px-12">WIZARD'S JOURNAL</h2>
-            <p class="text-base font-black uppercase tracking-[0.4em] opacity-80 mt-4">Completion Data by Arc</p>
+            <p class="text-base font-black uppercase tracking-[0.4em] opacity-80 mt-4">Completion Data & Analysis</p>
             
-            <div class="mt-6 text-4xl font-title font-black text-[#b91c1c] bg-[#fffdf5] inline-block px-8 py-3 rounded border-2 border-[#4a3326] shadow-[4px_4px_0px_#4a3326]">
-                TOTAL: <span id="summary-watched">0</span> / <span id="summary-total">328</span> EPS (<span id="summary-percent">0</span>%)
+            <!-- Export Breakdown Stats -->
+            <div class="mt-6 flex justify-center gap-6">
+                <!-- Main Story Block -->
+                <div class="text-center bg-[#fffdf5] px-6 py-4 rounded border-2 border-[#b91c1c] shadow-[4px_4px_0px_#b91c1c] min-w-[220px]">
+                    <div class="text-sm font-black uppercase tracking-widest text-[#b91c1c] mb-1">Main Story</div>
+                    <div class="text-4xl font-title font-black text-[#4a3326] tracking-wide"><span id="summary-main-watched">0</span> / <span id="summary-main-total">0</span></div>
+                    <div class="text-lg font-bold text-[#b91c1c] mt-1"><span id="summary-main-percent">0</span>%</div>
+                </div>
+                <!-- Filler Block -->
+                <div class="text-center bg-[#fffdf5] px-6 py-4 rounded border-2 border-[#0284c7] shadow-[4px_4px_0px_#0284c7] min-w-[220px]">
+                    <div class="text-sm font-black uppercase tracking-widest text-[#0284c7] mb-1">Fillers</div>
+                    <div class="text-4xl font-title font-black text-[#4a3326] tracking-wide"><span id="summary-filler-watched">0</span> / <span id="summary-filler-total">0</span></div>
+                    <div class="text-lg font-bold text-[#0284c7] mt-1"><span id="summary-filler-percent">0</span>%</div>
+                </div>
+                <!-- Total Block -->
+                <div class="text-center bg-[#fffdf5] px-6 py-4 rounded border-2 border-[#4a3326] shadow-[4px_4px_0px_#4a3326] min-w-[220px]">
+                    <div class="text-sm font-black uppercase tracking-widest text-[#4a3326] mb-1">Total Vault</div>
+                    <div class="text-4xl font-title font-black text-[#4a3326] tracking-wide"><span id="summary-total-watched">0</span> / <span id="summary-total-total">328</span></div>
+                    <div class="text-lg font-bold text-[#4a3326] mt-1"><span id="summary-total-percent">0</span>%</div>
+                </div>
             </div>
         </div>
         
-        <div id="data-summary-sagas" class="grid grid-cols-2 gap-x-10 gap-y-8">
+        <div id="data-summary-sagas" class="grid grid-cols-2 gap-x-10 gap-y-8 mt-12">
             <!-- Populated by JS on Export -->
         </div>
 
@@ -290,14 +321,12 @@
         onSnapshot(syncDocRef, (snapshot) => {
             if (snapshot.exists()) {
                 const cloudData = snapshot.data().watched || {};
-                // Only sync if the cloud has data to avoid overwriting with empties initially
                 if (Object.keys(cloudData).length > 0) {
                     window.trackerState.watched = cloudData;
                     localStorage.setItem('ftTracker_guild_quests', JSON.stringify(cloudData));
                 }
                 document.getElementById('cloud-status').classList.remove('hidden');
                 
-                // Only render if we are past the password screen
                 if (sessionStorage.getItem('ftTracker_unlocked') === 'true') {
                     window.renderUI();
                 }
@@ -306,12 +335,9 @@
             console.error("Firebase Sync Error (Check your Firestore Rules!):", error);
         });
 
-        // The save function now pushes to Firebase AND Local Storage
         window.saveState = function() {
-            // Save locally
             localStorage.setItem('ftTracker_guild_quests', JSON.stringify(window.trackerState.watched));
             
-            // Push to Firebase Cloud
             setDoc(syncDocRef, { watched: window.trackerState.watched }, { merge: true })
                 .catch(err => console.error("Error saving to cloud:", err));
                 
@@ -354,7 +380,7 @@
                 setTimeout(() => {
                     authScreen.remove();
                     mainApp.classList.remove('opacity-0');
-                    window.renderUI(); // Render upon unlock
+                    window.renderUI();
                 }, 500);
             } else {
                 authScreen.remove();
@@ -364,7 +390,6 @@
 
 
         // --- DATA & SAGAS LOGIC ---
-        // Using your exact episode data!
         const mangaRanges = "1-8, 10-18, 21-48, 51-68, 76-124, 152-181, 184-200, 227-245, 247-254, 257-259, 261-267, 269, 271-311, 313-328";
         const mixedRanges = "20, 49, 69, 151, 182-183, 201, 255, 260, 270, 312";
         const fillerRanges = "9, 19, 50, 70-75, 125-150, 202-226, 268";
@@ -394,6 +419,10 @@
         
         const allEpisodesMap = {};
         allEpisodesArray.forEach(ep => allEpisodesMap[ep.number] = ep);
+
+        // Pre-calculate Global Episode Stats
+        const totalMainEps = allEpisodesArray.filter(ep => ep.type !== 'filler').length;
+        const totalFillerEps = allEpisodesArray.filter(ep => ep.type === 'filler').length;
 
         // Grouping the episodes into their standard Fairy Tail Arcs
         const sagasData = [
@@ -500,6 +529,7 @@
         }
 
         window.renderUI = function() {
+            // Update Filter UI
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 const fType = btn.getAttribute('data-filter');
                 if (fType === window.trackerState.filterType) {
@@ -518,6 +548,7 @@
                 }
             });
 
+            // Update Hide Filler UI
             const toggleBg = document.getElementById('hide-filler-toggle');
             const toggleKnob = document.getElementById('hide-filler-knob');
             if (window.trackerState.hideFiller) {
@@ -528,6 +559,7 @@
                 toggleKnob.classList.remove('translate-x-5');
             }
 
+            // Generate Map Grid
             let htmlOutput = '';
             let totalVisibleEpisodes = 0;
 
@@ -599,15 +631,33 @@
 
             document.getElementById('sagas-container').innerHTML = htmlOutput;
             
-            const watchedCount = Object.values(window.trackerState.watched).filter(Boolean).length;
-            const progressPercentage = Math.round((watchedCount / TOTAL_EPS) * 100) || 0;
+            // --- DUAL PROGRESS BARS LOGIC ---
+            let watchedMain = 0;
+            let watchedFiller = 0;
+            let watchedTotal = 0;
+
+            Object.entries(window.trackerState.watched).forEach(([num, isWatched]) => {
+                if(isWatched) {
+                    watchedTotal++;
+                    if(allEpisodesMap[num] && allEpisodesMap[num].type === 'filler') {
+                        watchedFiller++;
+                    } else if (allEpisodesMap[num]) {
+                        watchedMain++;
+                    }
+                }
+            });
+
+            const mainPercent = Math.round((watchedMain / totalMainEps) * 100) || 0;
+            const totalPercent = Math.round((watchedTotal / TOTAL_EPS) * 100) || 0;
             
-            document.getElementById('watched-count').textContent = watchedCount;
-            document.getElementById('summary-watched').textContent = watchedCount;
-            document.getElementById('progress-bar-fill').style.width = `${progressPercentage}%`;
-            document.getElementById('progress-text').textContent = `${progressPercentage}% QUESTS COMPLETE`;
-            document.getElementById('summary-percent').textContent = progressPercentage;
+            // Update Top Bar (Main Story)
+            document.getElementById('main-progress-fill').style.width = `${mainPercent}%`;
+            document.getElementById('main-progress-text').textContent = `${watchedMain} / ${totalMainEps} EPS (${mainPercent}%)`;
             
+            // Update Bottom Bar (Total Completion)
+            document.getElementById('total-progress-fill').style.width = `${totalPercent}%`;
+            document.getElementById('total-progress-text').textContent = `${watchedTotal} / ${TOTAL_EPS} EPS (${totalPercent}%)`;
+
             lucide.createIcons();
         }
 
@@ -681,7 +731,7 @@
                 }
             });
 
-            // Export PNG (Logbook - Data Summary)
+            // Export PNG (Logbook - Data Summary with Custom Breakdown Boxes)
             document.getElementById('export-data-btn').addEventListener('click', async () => {
                 const btn = document.getElementById('export-data-btn');
                 const originalHtml = btn.innerHTML;
@@ -691,6 +741,35 @@
                     btn.disabled = true;
                     btn.classList.add('opacity-75');
 
+                    // 1. Calculate Breakdown Data for Top Banner
+                    let watchedMain = 0;
+                    let watchedFiller = 0;
+                    let watchedTotal = 0;
+
+                    Object.entries(window.trackerState.watched).forEach(([num, isWatched]) => {
+                        if(isWatched && allEpisodesMap[num]) {
+                            watchedTotal++;
+                            if(allEpisodesMap[num].type === 'filler') {
+                                watchedFiller++;
+                            } else {
+                                watchedMain++;
+                            }
+                        }
+                    });
+
+                    // 2. Inject Breakdown Data into the DOM
+                    document.getElementById('summary-main-watched').textContent = watchedMain;
+                    document.getElementById('summary-main-total').textContent = totalMainEps;
+                    document.getElementById('summary-main-percent').textContent = Math.round((watchedMain / totalMainEps) * 100) || 0;
+
+                    document.getElementById('summary-filler-watched').textContent = watchedFiller;
+                    document.getElementById('summary-filler-total').textContent = totalFillerEps;
+                    document.getElementById('summary-filler-percent').textContent = Math.round((watchedFiller / totalFillerEps) * 100) || 0;
+
+                    document.getElementById('summary-total-watched').textContent = watchedTotal;
+                    document.getElementById('summary-total-percent').textContent = Math.round((watchedTotal / TOTAL_EPS) * 100) || 0;
+
+                    // 3. Render Arcs list
                     let summaryHtml = '';
                     sagasData.forEach(saga => {
                         let sagaTotal = 0;
@@ -740,6 +819,7 @@
                     document.getElementById('data-summary-sagas').innerHTML = summaryHtml;
                     await new Promise(r => setTimeout(r, 100));
 
+                    // 4. Print Map
                     const element = document.getElementById('data-summary-container');
                     const canvas = await html2canvas(element, { 
                         backgroundColor: '#fdf6e3', 
@@ -766,4 +846,5 @@
     </script>
 </body>
 </html>
+
 
